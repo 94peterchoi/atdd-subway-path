@@ -1,5 +1,7 @@
 package nextstep.subway.domain;
 
+import nextstep.subway.applicaion.dto.PathResponse;
+import nextstep.subway.exception.NotFoundLineException;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.alg.shortestpath.KShortestPaths;
@@ -13,7 +15,7 @@ import java.util.Set;
 
 public class PathSearch {
 
-    private WeightedMultigraph<String, DefaultWeightedEdge> graph;
+    private WeightedMultigraph<Station, DefaultWeightedEdge> graph;
     private List<Line> lines = new ArrayList<>();
 
 
@@ -21,11 +23,21 @@ public class PathSearch {
         graph = new WeightedMultigraph(DefaultWeightedEdge.class);
     }
 
+    public PathSearch(List<Line> lines) {
+        graph = new WeightedMultigraph(DefaultWeightedEdge.class);
+        addPaths(lines);
+    }
+
+
     /**
      * 지하철 경로 찾기에 필요한 노선, 역, 구간을 등록한다
      * @param lines 노선목록
      */
     public void addPaths(List<Line> lines) {
+        if (lines.isEmpty()) {
+            throw new NotFoundLineException();
+        }
+
         for (Line line : lines) {
             this.lines.add(line);
             addStations(line.getStations());
@@ -38,15 +50,15 @@ public class PathSearch {
     }
 
     private void addStation(Station station) {
-        if (!graph.containsVertex(station.getName())) {
-            graph.addVertex(station.getName());
+        if (!graph.containsVertex(station)) {
+            graph.addVertex(station);
         }
     }
 
     private void addSections(Sections sections) {
         for (Section section : sections.getSections()) {
-            String upStation = section.getUpStation().getName();
-            String downStation = section.getDownStation().getName();
+            Station upStation = section.getUpStation();
+            Station downStation = section.getDownStation();
             graph.setEdgeWeight(graph.addEdge(upStation, downStation), section.getDistance());
         }
     }
@@ -59,7 +71,7 @@ public class PathSearch {
     public Double getShortestPathDistance(Station departure, Station destination) {
         stationsValidationCheck(departure, destination);
 
-        List<GraphPath> paths = new KShortestPaths(graph, 100).getPaths(departure.getName(), destination.getName());
+        List<GraphPath> paths = new KShortestPaths(graph, 100).getPaths(departure, destination);
         return paths.stream()
                         .min(Comparator.comparingDouble(GraphPath::getWeight))
                         .get()
@@ -71,10 +83,14 @@ public class PathSearch {
      * @param departure 출발역
      * @param destination 도착역
      */
-    public List<String> getShortestPath(Station departure, Station destination) {
+    public List<Station> getShortestPath(Station departure, Station destination) {
         stationsValidationCheck(departure, destination);
 
-        return new DijkstraShortestPath(graph).getPath(departure.getName(), destination.getName()).getVertexList();
+        return new DijkstraShortestPath(graph).getPath(departure, destination).getVertexList();
+    }
+
+    public PathResponse findShortestPath(Station departure, Station destination) {
+        return new PathResponse(getShortestPath(departure, destination), getShortestPathDistance(departure, destination));
     }
 
     private void stationsValidationCheck(Station departure, Station destination) {
@@ -82,8 +98,8 @@ public class PathSearch {
             throw new IllegalArgumentException("출발역과 도착역이 같을 수 없습니다.");
         }
 
-        Set<String> stationsRegistered = graph.vertexSet();
-        if (!stationsRegistered.containsAll(List.of(departure.getName(), destination.getName()))) {
+        Set<Station> stationsRegistered = graph.vertexSet();
+        if (!stationsRegistered.containsAll(List.of(departure, destination))) {
             throw new IllegalArgumentException("경로 찾기에 존재하지 않는 역이 포함되어 있습니다. 출발역과 도착역을 확인해주세요");
         }
 

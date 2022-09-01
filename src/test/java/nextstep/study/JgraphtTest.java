@@ -29,6 +29,7 @@ class JgraphtTest {
         DijkstraShortestPath dijkstraShortestPath = new DijkstraShortestPath(graph);
         List<String> shortestPath = dijkstraShortestPath.getPath(source, target).getVertexList();
 
+        // v1-v2-v3가 가장 짧음 그래서 지금 조회되는 최단경로가 v1,v2,v3 이렇게 3개 나와서 3이 나오는 거
         assertThat(shortestPath.size()).isEqualTo(3);
     }
 
@@ -47,11 +48,13 @@ class JgraphtTest {
 
         List<GraphPath> paths = new KShortestPaths(graph, 100).getPaths(source, target);
 
+        // 목적지까지 갈 수 있는 경로의 수를 의미함
         assertThat(paths).hasSize(2);
         paths.stream()
                 .forEach(it -> {
                     assertThat(it.getVertexList()).startsWith(source);
                     assertThat(it.getVertexList()).endsWith(target);
                 });
+
     }
 }

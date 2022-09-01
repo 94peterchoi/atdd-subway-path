@@ -121,7 +121,7 @@ public class PathTest {
         // given
         강남라인_세팅();
         // when
-        List<String> shortestPath = pathSearch.getShortestPath(교대역, 양재역);
+        List<Station> shortestPath = pathSearch.getShortestPath(교대역, 양재역);
         Double distance = pathSearch.getShortestPathDistance(교대역, 양재역);
 
 

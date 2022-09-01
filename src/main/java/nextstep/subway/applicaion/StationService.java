@@ -31,12 +31,6 @@ public class StationService {
                 .collect(Collectors.toList());
     }
 
-    public Station findStationByName(String name) {
-        return stationRepository.findAll().stream()
-                .filter(station -> station.getName().equals(name))
-                .findFirst().orElseThrow(IllegalAccessError::new);
-    }
-
     @Transactional
     public void deleteStationById(Long id) {
         stationRepository.deleteById(id);
